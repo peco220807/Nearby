@@ -1,10 +1,29 @@
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.db import Base, engine, SessionLocal
 from app import models
-from app.schemas import HouseholdCreate, HouseholdOut, ExpenseCreate, CareEntryCreate
+from app.balance import ExpenseData, split_equal, compute_balances, compute_transfers, help_shares
+from app.schemas import HouseholdCreate, HouseholdOut, ExpenseCreate, HelpHoursCreate, BalanceOut
 
-app = FastAPI(title="Nearby API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="Nearby API", lifespan=lifespan)
+
+# Фронтенд (Vite) работает на другом порту — разрешаем ему обращаться к API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("FRONTEND_ORIGINS", "http://localhost:5173").split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_db():
@@ -20,11 +39,6 @@ def get_household_or_404(token: str, db: Session) -> models.Household:
     if household is None:
         raise HTTPException(status_code=404, detail="Семья не найдена")
     return household
-
-
-@app.on_event("startup")
-def create_tables():
-    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health")
@@ -67,17 +81,15 @@ def add_expense(token: str, data: ExpenseCreate, db: Session = Depends(get_db)):
     db.flush()
 
     # Делим поровну; остаток в центах отдаём тому, кто заплатил
-    base, remainder = divmod(data.amount_cents, len(member_ids))
-    for mid in member_ids:
-        share = base + (remainder if mid == data.paid_by_id else 0)
+    for mid, share in split_equal(data.amount_cents, member_ids, data.paid_by_id).items():
         db.add(models.ExpenseShare(expense_id=expense.id, member_id=mid, share_cents=share))
 
     db.commit()
     return {"id": expense.id}
 
 
-@app.post("/households/{token}/care-entries", status_code=201)
-def add_care_entry(token: str, data: CareEntryCreate, db: Session = Depends(get_db)):
+@app.post("/households/{token}/help-hours", status_code=201)
+def add_help_hours(token: str, data: HelpHoursCreate, db: Session = Depends(get_db)):
     household = get_household_or_404(token, db)
     if data.member_id not in {m.id for m in household.members}:
         raise HTTPException(status_code=400, detail="Участник не из этой семьи")
@@ -92,3 +104,30 @@ def add_care_entry(token: str, data: CareEntryCreate, db: Session = Depends(get_
     db.add(entry)
     db.commit()
     return {"id": entry.id}
+
+
+@app.get("/households/{token}/balance", response_model=BalanceOut)
+def get_balance(token: str, db: Session = Depends(get_db)):
+    household = get_household_or_404(token, db)
+    names = {m.id: m.name for m in household.members}
+
+    expense_rows = db.query(models.Expense).filter_by(household_id=household.id).all()
+    shares: dict[int, dict[int, int]] = {e.id: {} for e in expense_rows}
+    share_rows = (
+        db.query(models.ExpenseShare)
+        .join(models.Expense, models.Expense.id == models.ExpenseShare.expense_id)
+        .filter(models.Expense.household_id == household.id)
+        .all()
+    )
+    for s in share_rows:
+        shares[s.expense_id][s.member_id] = s.share_cents
+    expenses = [ExpenseData(e.paid_by_id, e.amount_cents, shares[e.id]) for e in expense_rows]
+
+    help_rows = db.query(models.CareEntry).filter_by(household_id=household.id).all()
+
+    balances = compute_balances(names, expenses)
+    return {
+        "members": [{**vars(b), "name": names[b.member_id]} for b in balances],
+        "transfers": [vars(t) for t in compute_transfers(balances)],
+        "help_share_percent": help_shares(names, [(c.member_id, c.hours) for c in help_rows]),
+    }

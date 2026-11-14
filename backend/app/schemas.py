@@ -30,8 +30,27 @@ class ExpenseCreate(BaseModel):
     expense_date: date
 
 
-class CareEntryCreate(BaseModel):
+class HelpHoursCreate(BaseModel):
     member_id: int
     hours: float = Field(gt=0, le=24)
     entry_date: date
     note: str | None = Field(default=None, max_length=200)
+
+class MemberBalanceOut(BaseModel):
+    member_id: int
+    name: str
+    paid_cents: int
+    owed_cents: int
+    net_cents: int
+
+
+class TransferOut(BaseModel):
+    from_id: int
+    to_id: int
+    amount_cents: int
+
+
+class BalanceOut(BaseModel):
+    members: list[MemberBalanceOut]
+    transfers: list[TransferOut]
+    help_share_percent: dict[int, float]
