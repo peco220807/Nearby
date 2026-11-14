@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session
 from app.db import Base, engine, SessionLocal
 from app import models
 from app.balance import ExpenseData, split_equal, compute_balances, compute_transfers, help_shares
-from app.schemas import HouseholdCreate, HouseholdOut, ExpenseCreate, HelpHoursCreate, BalanceOut
+from app.eligibility.screen import screen
+from app.schemas import (
+    HouseholdCreate, HouseholdOut, ExpenseCreate, HelpHoursCreate, BalanceOut, ScreeningAnswers, ScreeningResult,
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -131,3 +134,8 @@ def get_balance(token: str, db: Session = Depends(get_db)):
         "transfers": [vars(t) for t in compute_transfers(balances)],
         "help_share_percent": help_shares(names, [(c.member_id, c.hours) for c in help_rows]),
     }
+
+
+@app.post("/eligibility/screen", response_model=ScreeningResult)
+def eligibility_screen(answers: ScreeningAnswers):
+    return screen(answers.model_dump())

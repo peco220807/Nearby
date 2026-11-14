@@ -83,3 +83,24 @@ def test_old_care_entries_path_removed(client):
 
 def test_balance_unknown_token(client):
     assert client.get("/households/nope/balance").status_code == 404
+
+
+def test_eligibility_screen_endpoint(client):
+    r = client.post("/eligibility/screen", json={"state": "TX", "is_veteran": False, "is_surviving_spouse_of_veteran": False})
+    assert r.status_code == 200
+    body = r.json()
+    assert "disclaimer" in body
+    va = next(p for p in body["programs"] if p["id"] == "va_aid_attendance")
+    assert va["status"] == "скорее не подходит"
+    assert {"status", "to_check", "documents", "source_url", "last_verified"} <= va.keys()
+
+
+def test_eligibility_screen_empty_body(client):
+    r = client.post("/eligibility/screen", json={})
+    assert r.status_code == 200
+    assert all(p["status"] == "нужна проверка" for p in r.json()["programs"])
+
+
+def test_eligibility_screen_rejects_bad_state(client):
+    assert client.post("/eligibility/screen", json={"state": "XX"}).status_code == 422
+    assert client.post("/eligibility/screen", json={"net_worth_cents": -1}).status_code == 422

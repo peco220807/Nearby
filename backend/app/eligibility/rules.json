@@ -1,0 +1,199 @@
+{
+  "disclaimer": "Это предварительный скрининг, а не решение о праве на льготу. Окончательно право определяет программа. Проверьте условия по ссылке на первичный источник.",
+  "rules": [
+    {
+      "id": "va_aid_attendance",
+      "name": "VA Pension с надбавкой Aid & Attendance",
+      "summary": "Ежемесячная надбавка к пенсии VA для ветеранов военного времени и вдов/вдовцов ветеранов, которым нужна помощь в повседневных делах. Есть ограничения по доходу и чистым активам.",
+      "state": null,
+      "source_url": "https://www.va.gov/pension/aid-attendance-housebound/",
+      "amounts_source_urls": [
+        "https://www.va.gov/pension/veterans-pension-rates/",
+        "https://www.va.gov/pension/survivors-pension-rates/"
+      ],
+      "last_verified": "2026-11-14",
+      "amounts_valid_until": "2026-11-30",
+      "amounts": {
+        "net_worth_limit_cents": 16369900,
+        "mapr_aid_attendance_veteran_alone_cents": 2909300,
+        "mapr_aid_attendance_veteran_with_spouse_cents": 3448800,
+        "mapr_aid_attendance_surviving_spouse_cents": 1869700
+      },
+      "amounts_note": "Годовые максимальные ставки (MAPR) и лимит чистых активов с va.gov, действуют с 01.12.2025 по 30.11.2026. Суммы пересматриваются ежегодно: перепроверяйте их.",
+      "input_fields": [
+        "is_veteran",
+        "is_surviving_spouse_of_veteran",
+        "wartime_service",
+        "needs_help_daily_activities",
+        "in_nursing_home",
+        "has_spouse",
+        "annual_income_cents",
+        "net_worth_cents"
+      ],
+      "conditions": [
+        {
+          "id": "veteran_or_survivor",
+          "on_fail": "unlikely",
+          "check": "Родитель — ветеран или вдова/вдовец ветерана.",
+          "any": [
+            {"field": "is_veteran", "op": "eq", "value": true},
+            {"field": "is_surviving_spouse_of_veteran", "op": "eq", "value": true}
+          ]
+        },
+        {
+          "id": "wartime_service",
+          "on_fail": "unlikely",
+          "check": "Служба ветерана: минимум 1 день в период военного времени и требуемый срок действительной службы (90 дней до 08.09.1980, обычно 24 месяца после). Полные условия — на va.gov/pension/eligibility.",
+          "field": "wartime_service", "op": "eq", "value": true
+        },
+        {
+          "id": "needs_care",
+          "on_fail": "unlikely",
+          "check": "Нужна помощь другого человека в повседневных делах (мытьё, еда, одевание), или родитель большую часть дня в постели, или находится в доме престарелых из-за потери способностей, или сильно ограничено зрение. Это подтверждает врач в форме VA 21-2680.",
+          "any": [
+            {"field": "needs_help_daily_activities", "op": "eq", "value": true},
+            {"field": "in_nursing_home", "op": "eq", "value": true}
+          ]
+        },
+        {
+          "id": "net_worth",
+          "on_fail": "unlikely",
+          "check": "Чистые активы (без дома, машины и большей части мебели, за вычетом долгов, вместе с активами супруга) не выше лимита VA.",
+          "field": "net_worth_cents", "op": "lte", "ref": "net_worth_limit_cents"
+        },
+        {
+          "id": "income",
+          "on_fail": "check",
+          "check": "Годовой доход по сравнению с максимальной ставкой (MAPR). Если доход выше, уточните на va.gov, какие расходы (например, медицинские) могут уменьшить учитываемый доход. Ставки для семей с детьми-иждивенцами другие.",
+          "any": [
+            {"all": [
+              {"field": "is_veteran", "op": "eq", "value": true},
+              {"field": "has_spouse", "op": "eq", "value": false},
+              {"field": "annual_income_cents", "op": "lte", "ref": "mapr_aid_attendance_veteran_alone_cents"}
+            ]},
+            {"all": [
+              {"field": "is_veteran", "op": "eq", "value": true},
+              {"field": "has_spouse", "op": "eq", "value": true},
+              {"field": "annual_income_cents", "op": "lte", "ref": "mapr_aid_attendance_veteran_with_spouse_cents"}
+            ]},
+            {"all": [
+              {"field": "is_surviving_spouse_of_veteran", "op": "eq", "value": true},
+              {"field": "annual_income_cents", "op": "lte", "ref": "mapr_aid_attendance_surviving_spouse_cents"}
+            ]}
+          ]
+        }
+      ],
+      "result_description": "Если условия выполняются, родитель, возможно, может претендовать на пенсию VA с надбавкой Aid & Attendance. Решение принимает VA после рассмотрения заявления.",
+      "documents": [
+        "DD214 или другой документ об увольнении с военной службы",
+        "VA Form 21-2680 (заполняет врач)",
+        "VA Form 21-0779, если родитель в доме престарелых",
+        "Сведения о доходах и активах родителя (и супруга)",
+        "Для вдовы/вдовца: свидетельство о браке и свидетельство о смерти ветерана"
+      ]
+    },
+    {
+      "id": "medicaid_ltc",
+      "name": "Medicaid: долгосрочный уход (LTSS)",
+      "summary": "Medicaid — основной плательщик долгосрочного ухода в США (дом престарелых, помощь на дому). Для людей 65+ доход обычно оценивается по методике SSI, учитываются и активы. Лимиты и программы зависят от штата.",
+      "state": null,
+      "source_url": "https://www.medicaid.gov/medicaid/eligibility-policy",
+      "amounts_source_urls": [],
+      "last_verified": "2026-11-14",
+      "amounts_valid_until": null,
+      "amounts": {
+        "income_limit_cents": null,
+        "asset_limit_cents": null
+      },
+      "amounts_note": "Лимиты дохода и активов устанавливает штат — здесь они не указаны. Уточните в Medicaid-агентстве своего штата.",
+      "input_fields": ["age", "state", "needs_help_daily_activities", "in_nursing_home", "annual_income_cents", "net_worth_cents"],
+      "conditions": [
+        {
+          "id": "age_or_disability",
+          "on_fail": "check",
+          "check": "Возраст 65+ (или инвалидность/слепота — тогда действуют те же правила SSI).",
+          "field": "age", "op": "gte", "value": 65
+        },
+        {
+          "id": "needs_care",
+          "on_fail": "check",
+          "check": "Потребность в уходе: штат оценивает, нужен ли уровень ухода дома престарелых или помощь на дому.",
+          "any": [
+            {"field": "needs_help_daily_activities", "op": "eq", "value": true},
+            {"field": "in_nursing_home", "op": "eq", "value": true}
+          ]
+        },
+        {
+          "id": "income",
+          "on_fail": "check",
+          "check": "Доход не выше лимита штата.",
+          "field": "annual_income_cents", "op": "lte", "ref": "income_limit_cents"
+        },
+        {
+          "id": "assets",
+          "on_fail": "check",
+          "check": "Активы не выше лимита штата. Передача активов за 5 лет до заявления может привести к отказу.",
+          "field": "net_worth_cents", "op": "lte", "ref": "asset_limit_cents"
+        }
+      ],
+      "result_description": "Возможно, родитель может претендовать на Medicaid для долгосрочного ухода. Решение принимает штат.",
+      "documents": [
+        "Документ, удостоверяющий личность и гражданство/иммиграционный статус",
+        "Сведения о доходах (Social Security, пенсии)",
+        "Выписки по счетам и сведения об активах за последние 5 лет",
+        "Медицинские документы о потребности в уходе"
+      ]
+    },
+    {
+      "id": "dependent_care_credit",
+      "name": "Налоговый кредит на уход за иждивенцем (Child and Dependent Care Credit)",
+      "summary": "Налоговый кредит для того, кто оплачивает уход за родителем, неспособным себя обслуживать, чтобы иметь возможность работать. Родитель должен быть иждивенцем (или мог бы им быть, если бы не его доход) и жить с вами больше половины года.",
+      "state": null,
+      "source_url": "https://www.irs.gov/taxtopics/tc602",
+      "amounts_source_urls": [],
+      "last_verified": "2026-11-14",
+      "amounts_valid_until": null,
+      "amounts": {},
+      "amounts_note": "Суммы кредита здесь не рассчитываются.",
+      "input_fields": [
+        "needs_help_daily_activities",
+        "lives_with_caregiver_over_half_year",
+        "caregiver_provides_over_half_support",
+        "caregiver_works"
+      ],
+      "conditions": [
+        {
+          "id": "incapable_of_self_care",
+          "on_fail": "unlikely",
+          "check": "Родитель не может сам позаботиться о гигиене и питании или нуждается в постоянном присмотре.",
+          "field": "needs_help_daily_activities", "op": "eq", "value": true
+        },
+        {
+          "id": "lives_with_you",
+          "on_fail": "unlikely",
+          "check": "Родитель жил с вами больше половины года.",
+          "field": "lives_with_caregiver_over_half_year", "op": "eq", "value": true
+        },
+        {
+          "id": "support_test",
+          "on_fail": "unlikely",
+          "check": "Вы обеспечиваете больше 50% всей поддержки родителя за год (тест поддержки, IRS Pub. 501).",
+          "field": "caregiver_provides_over_half_support", "op": "eq", "value": true
+        },
+        {
+          "id": "work_related",
+          "on_fail": "unlikely",
+          "check": "Расходы на уход нужны, чтобы вы (и супруг при совместной декларации) могли работать или искать работу.",
+          "field": "caregiver_works", "op": "eq", "value": true
+        }
+      ],
+      "always_check": ["Возможно, подходит — проверьте у налогового специалиста."],
+      "result_description": "Возможно, вы можете заявить налоговый кредит на уход за родителем. Проверьте у налогового специалиста.",
+      "documents": [
+        "Чеки и счета за уход с именем, адресом и TIN/SSN поставщика услуг",
+        "Подтверждение расходов на содержание родителя (для теста 50% поддержки)",
+        "Форма 2441 к налоговой декларации"
+      ]
+    }
+  ]
+}
