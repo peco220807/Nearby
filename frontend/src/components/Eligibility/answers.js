@@ -26,6 +26,9 @@ export const YES_NO_STEPS = {
   ],
   3: [
     ["needs_help_daily_activities", "Does your parent need help with daily activities (bathing, eating, dressing)?"],
+    ["needs_daily_help_memory", "Does your parent need help with daily activities because of memory loss?"],
+    ["has_dementia_or_alzheimers", "Has a doctor diagnosed your parent with dementia or Alzheimer's?"],
+    ["has_disability", "Does your parent have a disability that limits work or daily activities?"],
     ["in_nursing_home", "Does your parent live in a nursing home?"],
     ["has_medicare", "Does your parent have Medicare?"],
   ],

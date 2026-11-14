@@ -7,7 +7,7 @@ import pytest
 from app.eligibility.screen import NEEDS_CHECK, POSSIBLE, UNLIKELY, load_rules, screen
 
 TODAY = date(2026, 11, 14)  # VA amounts are valid until 2026-11-30
-OFFICIAL_HOSTS = ("www.va.gov", "www.medicaid.gov", "www.cms.gov", "www.irs.gov", "www.medicare.gov")
+OFFICIAL_HOSTS = ("www.va.gov", "www.medicaid.gov", "www.cms.gov", "www.irs.gov", "www.medicare.gov", "www.ssa.gov")
 FORBIDDEN_WORDS = ("guaranteed", "guarantee", "you will receive", "you'll receive", "definitely", "you qualify",
                    "you will qualify", "going to be fine", "approved")
 
@@ -327,3 +327,121 @@ def test_unlikely_conditions_have_fail_text(rule):
             assert cond["fail_text"] != cond["check"]
             # a reason reads as what the answers showed, not as a requirement
             assert cond["fail_text"].startswith("Based on your answers")
+
+
+# --- memory, diagnosis and "not sure" --------------------------------------------------
+
+NO_HELP_VETERAN = {**VETERAN_LOW_INCOME, "needs_help_daily_activities": False, "in_nursing_home": False}
+
+
+def test_memory_help_counts_as_need_for_help():
+    answers = {**NO_HELP_VETERAN, "needs_daily_help_memory": True}
+    assert by_id(screen(answers, today=TODAY))["va_aid_attendance"]["status"] == POSSIBLE
+
+
+def test_memory_unknown_gives_needs_review_not_unlikely():
+    answers = {**NO_HELP_VETERAN, "needs_daily_help_memory": None}
+    va = by_id(screen(answers, today=TODAY))["va_aid_attendance"]
+    assert va["status"] == NEEDS_CHECK
+    assert va["reasons"] == []
+
+
+def test_no_help_for_any_reason_is_unlikely():
+    answers = {**NO_HELP_VETERAN, "needs_daily_help_memory": False}
+    va = by_id(screen(answers, today=TODAY))["va_aid_attendance"]
+    assert va["status"] == UNLIKELY
+    assert any("memory" in r for r in va["reasons"])
+
+
+def test_diagnosis_alone_does_not_change_any_status():
+    base = screen({}, today=TODAY)
+    with_dx = screen({"has_dementia_or_alzheimers": True}, today=TODAY)
+    assert with_dx == base
+    assert all(p["status"] == NEEDS_CHECK for p in with_dx["programs"])
+
+
+def test_diagnosis_without_need_for_help_does_not_rescue_va():
+    answers = {**NO_HELP_VETERAN, "needs_daily_help_memory": False, "has_dementia_or_alzheimers": True}
+    assert by_id(screen(answers, today=TODAY))["va_aid_attendance"]["status"] == UNLIKELY
+
+
+def test_medicaid_memory_help_and_disability_are_review_only():
+    answers = {"age": 60, "has_disability": True, "needs_daily_help_memory": True}
+    mc = by_id(screen(answers, today=TODAY))["medicaid_ltc"]
+    assert mc["status"] == NEEDS_CHECK  # state limits are null -> never "possible"
+    assert mc["reasons"] == []
+    assert not any("65" in c for c in mc["to_check"])  # age/disability condition is satisfied by the disability
+
+
+def test_unknown_values_never_produce_unlikely():
+    keys = ["needs_daily_help_memory", "has_dementia_or_alzheimers", "has_disability", "needs_help_daily_activities",
+            "has_medicare", "is_veteran", "is_surviving_spouse_of_veteran"]
+    for p in screen(dict.fromkeys(keys), today=TODAY)["programs"]:
+        assert p["status"] == NEEDS_CHECK, p["id"]
+
+
+# --- disability: Medicare before 65 and SSI ------------------------------------------
+
+def test_disability_never_gives_possible():
+    answers = {"has_disability": True, "age": 60, "annual_income_cents": 0, "net_worth_cents": 0}
+    dis = by_id(screen(answers, today=TODAY))["disability_medicare_ssi"]
+    assert dis["status"] == NEEDS_CHECK  # SSI limits are null and the 24-month rule is manual
+    assert dis["reasons"] == []
+    assert any("24 months" in c for c in dis["to_check"])
+
+
+def test_disability_unknown_is_needs_review():
+    dis = by_id(screen({"has_disability": None, "age": 60}, today=TODAY))["disability_medicare_ssi"]
+    assert dis["status"] == NEEDS_CHECK
+
+
+def test_no_disability_under_65_unlikely():
+    dis = by_id(screen({"has_disability": False, "age": 60}, today=TODAY))["disability_medicare_ssi"]
+    assert dis["status"] == UNLIKELY
+    assert dis["reasons"] and dis["reasons"][0].startswith("Based on your answers")
+
+
+def test_no_disability_but_65_plus_still_review_for_ssi():
+    dis = by_id(screen({"has_disability": False, "age": 80}, today=TODAY))["disability_medicare_ssi"]
+    assert dis["status"] == NEEDS_CHECK
+
+
+def test_disability_rule_sources_and_null_amounts():
+    rule = next(r for r in load_rules()["rules"] if r["id"] == "disability_medicare_ssi")
+    assert rule["source_url"].startswith("https://www.medicare.gov/")
+    assert any("ssa.gov" in t for t in rule["always_check"]) and any("cms.gov" in t for t in rule["always_check"])
+    assert set(rule["amounts"].values()) == {None}
+    assert rule["last_verified"] == "2026-11-15"
+
+
+def test_new_texts_have_no_promises():
+    rule = next(r for r in load_rules()["rules"] if r["id"] == "disability_medicare_ssi")
+    texts = [rule["summary"], rule["result_description"], rule["unlikely_description"], rule["amounts_note"],
+             *rule["always_check"], *[c["check"] for c in rule["conditions"]],
+             *[c.get("fail_text", "") for c in rule["conditions"]]]
+    joined = " ".join(texts).lower()
+    for word in ("guaranteed", "you will qualify", "you'll qualify", "you will receive", "definitely"):
+        assert word not in joined, word
+
+
+def test_memory_help_counts_for_tax_credit_and_pcafc():
+    tax = by_id(screen({"needs_help_daily_activities": False, "needs_daily_help_memory": True,
+                        "lives_with_caregiver_over_half_year": True, "caregiver_provides_over_half_support": True,
+                        "caregiver_works": True}, today=TODAY))["dependent_care_credit"]
+    assert tax["status"] == POSSIBLE
+    pcafc = by_id(screen({**PCAFC_VETERAN, "needs_help_daily_activities": False, "needs_daily_help_memory": True},
+                         today=TODAY))["va_caregiver_pcafc"]
+    assert pcafc["status"] == NEEDS_CHECK and pcafc["reasons"] == []
+
+
+@pytest.mark.parametrize("rule", load_rules()["rules"], ids=lambda r: r["id"])
+def test_input_fields_list_every_field_used(rule):
+    used = set()
+    def walk(c):
+        if "field" in c:
+            used.add(c["field"])
+        for sub in c.get("any", []) + c.get("all", []):
+            walk(sub)
+    for c in rule["conditions"]:
+        walk(c)
+    assert used <= set(rule["input_fields"]), used - set(rule["input_fields"])

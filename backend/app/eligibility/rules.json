@@ -25,6 +25,7 @@
         "is_surviving_spouse_of_veteran",
         "wartime_service",
         "needs_help_daily_activities",
+        "needs_daily_help_memory",
         "in_nursing_home",
         "has_spouse",
         "annual_income_cents",
@@ -51,10 +52,11 @@
         {
           "id": "needs_care",
           "on_fail": "unlikely",
-          "check": "Your parent needs another person's help with everyday activities (bathing, eating, dressing), spends most of the day in bed, is in a nursing home because of lost abilities, or has severely limited eyesight. A doctor confirms this on VA Form 21-2680.",
-          "fail_text": "Based on your answers, your parent does not need help with everyday activities and does not live in a nursing home, which this benefit is meant for.",
+          "check": "Your parent needs another person's help with everyday activities (bathing, eating, dressing), including help needed because of memory loss; or spends most of the day in bed; or is in a nursing home because of lost mental or physical abilities; or has severely limited eyesight. A doctor confirms this on VA Form 21-2680. va.gov lists the need for help, not a diagnosis, so a dementia diagnosis on its own does not count.",
+          "fail_text": "Based on your answers, your parent does not need help with everyday activities, for memory or any other reason, and does not live in a nursing home, which this benefit is meant for.",
           "any": [
             {"field": "needs_help_daily_activities", "op": "eq", "value": true},
+            {"field": "needs_daily_help_memory", "op": "eq", "value": true},
             {"field": "in_nursing_home", "op": "eq", "value": true}
           ]
         },
@@ -111,20 +113,24 @@
         "asset_limit_cents": null
       },
       "amounts_note": "Income and asset limits are set by each state, so they aren't listed here. Your state's Medicaid agency can tell you the current ones.",
-      "input_fields": ["age", "state", "needs_help_daily_activities", "in_nursing_home", "annual_income_cents", "net_worth_cents"],
+      "input_fields": ["age", "has_disability", "state", "needs_help_daily_activities", "needs_daily_help_memory", "in_nursing_home", "annual_income_cents", "net_worth_cents"],
       "conditions": [
         {
           "id": "age_or_disability",
           "on_fail": "check",
-          "check": "Age 65 or older (or a disability or blindness, which follows the same SSI rules).",
-          "field": "age", "op": "gte", "value": 65
+          "check": "Age 65 or older, or a disability or blindness (medicaid.gov: these groups are assessed with SSI income rules).",
+          "any": [
+            {"field": "age", "op": "gte", "value": 65},
+            {"field": "has_disability", "op": "eq", "value": true}
+          ]
         },
         {
           "id": "needs_care",
           "on_fail": "check",
-          "check": "Need for care: the state assesses whether a nursing-home level of care or care at home is needed.",
+          "check": "Need for care: the state assesses whether a nursing-home level of care or care at home is needed. Help needed because of memory loss counts as a need for care in that assessment. Needs review: medicaid.gov does not publish the functional criteria; each state sets its own.",
           "any": [
             {"field": "needs_help_daily_activities", "op": "eq", "value": true},
+            {"field": "needs_daily_help_memory", "op": "eq", "value": true},
             {"field": "in_nursing_home", "op": "eq", "value": true}
           ]
         },
@@ -163,6 +169,7 @@
       "amounts_note": "Credit amounts aren't calculated here.",
       "input_fields": [
         "needs_help_daily_activities",
+        "needs_daily_help_memory",
         "lives_with_caregiver_over_half_year",
         "caregiver_provides_over_half_support",
         "caregiver_works"
@@ -171,9 +178,12 @@
         {
           "id": "incapable_of_self_care",
           "on_fail": "unlikely",
-          "check": "Your parent can't take care of their own hygiene or nutrition, or needs full-time attention.",
-          "fail_text": "Based on your answers, your parent does not need help with self-care, which this credit requires.",
-          "field": "needs_help_daily_activities", "op": "eq", "value": true
+          "check": "Your parent can't take care of their own hygiene or nutrition, or needs full-time attention. The IRS counts being physically or mentally incapable of self-care, so help needed because of memory loss counts too; a diagnosis alone does not.",
+          "fail_text": "Based on your answers, your parent does not need help with self-care, for memory or any other reason, which this credit requires.",
+          "any": [
+            {"field": "needs_help_daily_activities", "op": "eq", "value": true},
+            {"field": "needs_daily_help_memory", "op": "eq", "value": true}
+          ]
         },
         {
           "id": "lives_with_you",
@@ -217,7 +227,7 @@
       "amounts_valid_until": null,
       "amounts": {},
       "amounts_note": "The stipend depends on the level of care and the region. va.gov has the details.",
-      "input_fields": ["is_veteran", "va_service_rating_70_plus", "needs_help_daily_activities"],
+      "input_fields": ["is_veteran", "va_service_rating_70_plus", "needs_help_daily_activities", "needs_daily_help_memory"],
       "conditions": [
         {
           "id": "veteran",
@@ -236,9 +246,12 @@
         {
           "id": "needs_care",
           "on_fail": "unlikely",
-          "check": "The veteran needs personal care services.",
-          "fail_text": "Based on your answers, the veteran does not need personal care, which this program is meant for.",
-          "field": "needs_help_daily_activities", "op": "eq", "value": true
+          "check": "The veteran needs personal care services, whether because of a physical condition or because of memory loss.",
+          "fail_text": "Based on your answers, the veteran does not need personal care, for memory or any other reason, which this program is meant for.",
+          "any": [
+            {"field": "needs_help_daily_activities", "op": "eq", "value": true},
+            {"field": "needs_daily_help_memory", "op": "eq", "value": true}
+          ]
         },
         {
           "id": "six_months",
@@ -312,6 +325,62 @@
         "Proof of income",
         "Savings and bank statements",
         "Medicare card"
+      ]
+    },
+    {
+      "id": "disability_medicare_ssi",
+      "name": "Medicare before 65 (disability) and SSI",
+      "summary": "Two programs tied to a disability. Medicare: a person under 65 who receives Social Security disability benefits becomes entitled to Part A after 24 months of those benefits (right away with ALS). SSI: a monthly payment from Social Security for people who are 65 or older, blind, or disabled and have limited income and resources.",
+      "state": null,
+      "source_url": "https://www.medicare.gov/basics/get-started-with-medicare/sign-up/when-can-i-sign-up-for-medicare",
+      "amounts_source_urls": [],
+      "last_verified": "2026-11-15",
+      "amounts_valid_until": null,
+      "amounts": {
+        "ssi_income_limit_cents": null,
+        "ssi_resource_limit_cents": null
+      },
+      "amounts_note": "SSI income and resource limits are set by Social Security and are not listed here: ssa.gov could not be checked automatically on 11/15/2026, so they stay blank until verified. ssa.gov/ssi has the current figures.",
+      "input_fields": ["has_disability", "age", "annual_income_cents", "net_worth_cents"],
+      "conditions": [
+        {
+          "id": "disability_or_65",
+          "on_fail": "unlikely",
+          "check": "Your parent has a disability that limits work or daily activities, or is 65 or older (SSI also covers people 65+ without a disability).",
+          "fail_text": "Based on your answers, your parent is under 65 and does not have a disability, and these programs are for people who are 65 or older, blind, or disabled.",
+          "any": [
+            {"field": "has_disability", "op": "eq", "value": true},
+            {"field": "age", "op": "gte", "value": 65}
+          ]
+        },
+        {
+          "id": "medicare_24_months",
+          "on_fail": "check",
+          "check": "Medicare before 65: entitlement to Part A begins after 24 months of Social Security disability benefits, or in the first month with ALS (cms.gov: Original Medicare eligibility; medicare.gov: when you can sign up). The 24 months count from when Social Security disability benefits begin, not from the diagnosis.",
+          "manual": true
+        },
+        {
+          "id": "ssi_income",
+          "on_fail": "check",
+          "check": "SSI: income below Social Security's limit. The limit is not listed here (needs review).",
+          "field": "annual_income_cents", "op": "lte", "ref": "ssi_income_limit_cents"
+        },
+        {
+          "id": "ssi_resources",
+          "on_fail": "check",
+          "check": "SSI: resources below Social Security's limit. The limit is not listed here (needs review).",
+          "field": "net_worth_cents", "op": "lte", "ref": "ssi_resource_limit_cents"
+        }
+      ],
+      "always_check": [
+        "Both programs run through Social Security. SSI eligibility details: https://www.ssa.gov/ssi. Medicare eligibility rules: https://www.cms.gov/medicare/eligibility-and-enrollment/origmedicarepartabeligenrol"
+      ],
+      "result_description": "Possibly a fit. Depending on the disability decision and income, your parent may be able to get Medicare before 65 or SSI. Social Security makes both decisions.",
+      "unlikely_description": "Unlikely to apply, based on what you told us. The reasons are below.",
+      "documents": [
+        "Social Security disability award letter, if there is one",
+        "Income records and bank statements",
+        "Medicare card, if your parent already has Medicare"
       ]
     }
   ]

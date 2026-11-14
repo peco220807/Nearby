@@ -135,3 +135,19 @@ def test_scenarios_calculate_rejects_negative(client):
     ):
         assert client.post("/scenarios/calculate", json=body).status_code == 422, body
     assert client.post("/scenarios/calculate", json={}).status_code == 422
+
+
+def test_eligibility_screen_accepts_new_fields(client):
+    body = {"needs_daily_help_memory": True, "has_dementia_or_alzheimers": True, "has_disability": None}
+    r = client.post("/eligibility/screen", json=body)
+    assert r.status_code == 200
+    assert {p["status"] for p in r.json()["programs"]} <= {"possible", "needs review", "unlikely"}
+
+
+def test_eligibility_screen_rejects_unknown_values(client):
+    for body in (
+        {"needs_daily_help_memory": "maybe"},
+        {"has_dementia_or_alzheimers": "sometimes"},
+        {"has_disability": 5},
+    ):
+        assert client.post("/eligibility/screen", json=body).status_code == 422, body

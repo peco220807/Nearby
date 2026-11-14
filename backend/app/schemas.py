@@ -74,6 +74,9 @@ class ScreeningAnswers(BaseModel):
     in_nursing_home: bool | None = None
     va_service_rating_70_plus: bool | None = None
     has_medicare: bool | None = None
+    needs_daily_help_memory: bool | None = None      # help with daily activities because of memory loss
+    has_dementia_or_alzheimers: bool | None = None   # diagnosis only; never changes a status by itself
+    has_disability: bool | None = None               # disability that limits work or daily activities
     annual_income_cents: int | None = Field(default=None, ge=0)
     net_worth_cents: int | None = Field(default=None, ge=0)
     # про того, кто помогает родителю (для налогового кредита)

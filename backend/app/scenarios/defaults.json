@@ -33,7 +33,7 @@
       "source_name": "A Place for Mom, 2026 report",
       "as_of": "2026",
       "kind": "estimate",
-      "note": "Needs verification: the CareScout Cost of Care Survey 2025 has no memory care figure. This value comes from a marketing report by a company that refers families to facilities, and the report page could not be found as of 11/14/2026. Hidden by default for that reason.",
+      "note": "Needs verification: no memory care figure was found in the CareScout Cost of Care Survey 2025, neither in the 03/02/2026 press release nor on carescout.com/cost-of-care (checked 11/15/2026; the survey covers in-home care, adult day care, assisted living and nursing homes). This value comes from a marketing report by a company that refers families to facilities, and its report page could not be found. Hidden by default for that reason.",
       "enabled_by_default": false
     },
     {

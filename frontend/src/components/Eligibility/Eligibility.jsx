@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { screenEligibility } from "../../api.js";
 import { EMPTY_FORM, STATES, STATUS_LABELS, YES_NO_STEPS, buildAnswers, formatDate, resultToText, validateStep } from "./answers.js";
 import { Info } from "../icons.jsx";
@@ -81,6 +82,20 @@ export default function Eligibility() {
         {result.programs.map((p) => (
           <ProgramCard key={p.id} program={p} />
         ))}
+        {form.has_dementia_or_alzheimers === "yes" && (
+          <article className="card">
+            <h3>About memory care</h3>
+            <p>
+              You told us a doctor has diagnosed dementia or Alzheimer's. The diagnosis by itself doesn't change the
+              statuses above: programs look at the help your parent needs day to day, which is why we asked about that
+              separately.
+            </p>
+            <p className="muted">
+              For the cost side, the <Link to="/scenarios">care cost calculator</Link> has a memory care scenario. It's
+              off by default because we haven't found a verified national figure for it yet; you can switch it on there.
+            </p>
+          </article>
+        )}
         <p className="notice">
           This is a starting point, not a decision. If something looks possible, the primary source is the place to check
           the details, and a benefits counselor or social worker can help with the application.
