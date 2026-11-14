@@ -1,4 +1,4 @@
-"""Расчёт баланса семьи. Чистые функции: без базы, только целые центы."""
+"""Household balance. Pure functions: no database, integer cents only."""
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -26,12 +26,12 @@ class Transfer:
 
 
 def split_equal(amount_cents: int, member_ids: Iterable[int], payer_id: int) -> dict[int, int]:
-    """Делит сумму поровну; остаток в центах получает тот, кто заплатил."""
+    """Splits an amount equally; the payer gets the leftover cents."""
     ids = sorted(member_ids)
     if not ids:
-        raise ValueError("Нет участников для деления")
+        raise ValueError("No members to split between")
     if payer_id not in ids:
-        raise ValueError("Плательщик не из этой семьи")
+        raise ValueError("Payer is not a member of this household")
     base, remainder = divmod(amount_cents, len(ids))
     return {mid: base + (remainder if mid == payer_id else 0) for mid in ids}
 
@@ -48,10 +48,10 @@ def compute_balances(member_ids: Iterable[int], expenses: Iterable[ExpenseData])
 
 
 def compute_transfers(balances: Iterable[MemberBalance]) -> list[Transfer]:
-    """Жадно: самый большой должник платит самому большому кредитору."""
+    """Greedy: the largest debtor pays the largest creditor."""
     balances = list(balances)
     if sum(b.net_cents for b in balances) != 0:
-        raise ValueError("Сумма балансов не равна нулю")
+        raise ValueError("Balances do not sum to zero")
 
     debtors = {b.member_id: -b.net_cents for b in balances if b.net_cents < 0}
     creditors = {b.member_id: b.net_cents for b in balances if b.net_cents > 0}
@@ -70,7 +70,7 @@ def compute_transfers(balances: Iterable[MemberBalance]) -> list[Transfer]:
 
 
 def help_shares(member_ids: Iterable[int], entries: Iterable[tuple[int, float]]) -> dict[int, float]:
-    """Доля часов помощи родителю в процентах (1 знак). Нет часов — пустой словарь."""
+    """Share of help hours per member in percent (1 decimal). No hours -> empty dict."""
     hours = dict.fromkeys(sorted(member_ids), 0.0)
     for mid, h in entries:
         hours[mid] += h

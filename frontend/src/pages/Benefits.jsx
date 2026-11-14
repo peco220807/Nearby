@@ -1,14 +1,11 @@
-import { Link } from "react-router-dom";
 import Eligibility from "../components/Eligibility/Eligibility.jsx";
+import Layout from "../components/Layout.jsx";
 
-// Скрининг льгот не привязан к семье и ничего не сохраняет
+// The benefits check is not tied to a family and saves nothing
 export default function Benefits() {
   return (
-    <main>
-      <p style={{ padding: "0 16px" }}>
-        <Link to="/">← На главную</Link>
-      </p>
+    <Layout>
       <Eligibility />
-    </main>
+    </Layout>
   );
 }

@@ -1,10 +1,10 @@
 {
-  "disclaimer": "Это предварительный скрининг, а не решение о праве на льготу. Окончательно право определяет программа. Проверьте условия по ссылке на первичный источник.",
+  "disclaimer": "This is a first look, not a decision about eligibility. Each program makes its own decision. The links take you to the official sources, so you can check the details before you apply.",
   "rules": [
     {
       "id": "va_aid_attendance",
-      "name": "VA Pension с надбавкой Aid & Attendance",
-      "summary": "Ежемесячная надбавка к пенсии VA для ветеранов военного времени и вдов/вдовцов ветеранов, которым нужна помощь в повседневных делах. Есть ограничения по доходу и чистым активам.",
+      "name": "VA Aid and Attendance",
+      "summary": "A monthly addition to the VA pension for wartime veterans and their surviving spouses who need help with everyday activities. Income and net worth limits apply.",
       "state": null,
       "source_url": "https://www.va.gov/pension/aid-attendance-housebound/",
       "amounts_source_urls": [
@@ -19,7 +19,7 @@
         "mapr_aid_attendance_veteran_with_spouse_cents": 3448800,
         "mapr_aid_attendance_surviving_spouse_cents": 1869700
       },
-      "amounts_note": "Годовые максимальные ставки (MAPR) и лимит чистых активов с va.gov, действуют с 01.12.2025 по 30.11.2026. Суммы пересматриваются ежегодно: перепроверяйте их.",
+      "amounts_note": "The Maximum Annual Pension Rates (MAPR) and the net worth limit come from va.gov and apply from 12/01/2025 to 11/30/2026. They change every year, so it's worth re-checking them.",
       "input_fields": [
         "is_veteran",
         "is_surviving_spouse_of_veteran",
@@ -34,8 +34,8 @@
         {
           "id": "veteran_or_survivor",
           "on_fail": "unlikely",
-          "check": "Родитель — ветеран или вдова/вдовец ветерана.",
-          "fail_text": "Родитель не является ветераном или вдовой/вдовцом ветерана (по вашим ответам).",
+          "check": "Your parent is a veteran or the surviving spouse of a veteran.",
+          "fail_text": "Based on your answers, your parent is not a veteran or a veteran's surviving spouse, and this program is for them.",
           "any": [
             {"field": "is_veteran", "op": "eq", "value": true},
             {"field": "is_surviving_spouse_of_veteran", "op": "eq", "value": true}
@@ -44,15 +44,15 @@
         {
           "id": "wartime_service",
           "on_fail": "unlikely",
-          "check": "Служба ветерана: минимум 1 день в период военного времени и требуемый срок действительной службы (90 дней до 08.09.1980, обычно 24 месяца после). Полные условия — на va.gov/pension/eligibility.",
-          "fail_text": "Служба ветерана не приходилась на военное время (по вашим ответам).",
+          "check": "Service requirements: at least 1 day during a wartime period and the required length of active duty (90 days if service began before 09/08/1980, usually 24 months after). Full conditions: va.gov/pension/eligibility.",
+          "fail_text": "Based on your answers, the service did not include a wartime period, which this pension requires.",
           "field": "wartime_service", "op": "eq", "value": true
         },
         {
           "id": "needs_care",
           "on_fail": "unlikely",
-          "check": "Нужна помощь другого человека в повседневных делах (мытьё, еда, одевание), или родитель большую часть дня в постели, или находится в доме престарелых из-за потери способностей, или сильно ограничено зрение. Это подтверждает врач в форме VA 21-2680.",
-          "fail_text": "Родителю не нужна помощь в повседневных делах, и он не живёт в доме престарелых (по вашим ответам).",
+          "check": "Your parent needs another person's help with everyday activities (bathing, eating, dressing), spends most of the day in bed, is in a nursing home because of lost abilities, or has severely limited eyesight. A doctor confirms this on VA Form 21-2680.",
+          "fail_text": "Based on your answers, your parent does not need help with everyday activities and does not live in a nursing home, which this benefit is meant for.",
           "any": [
             {"field": "needs_help_daily_activities", "op": "eq", "value": true},
             {"field": "in_nursing_home", "op": "eq", "value": true}
@@ -61,14 +61,14 @@
         {
           "id": "net_worth",
           "on_fail": "unlikely",
-          "check": "Чистые активы (без дома, машины и большей части мебели, за вычетом долгов, вместе с активами супруга) не выше лимита VA.",
-          "fail_text": "Чистые активы выше лимита VA (по вашим ответам).",
+          "check": "Net worth (excluding the home, one car and most furnishings, minus debts, including the spouse's assets) is at or below the VA limit.",
+          "fail_text": "Based on your answers, net worth is above the VA limit. If some of it is the home or a car, it may not count, so it's worth checking.",
           "field": "net_worth_cents", "op": "lte", "ref": "net_worth_limit_cents"
         },
         {
           "id": "income",
           "on_fail": "check",
-          "check": "Годовой доход по сравнению с максимальной ставкой (MAPR). Если доход выше, уточните на va.gov, какие расходы (например, медицинские) могут уменьшить учитываемый доход. Ставки для семей с детьми-иждивенцами другие.",
+          "check": "Annual income compared with the Maximum Annual Pension Rate (MAPR). If income is higher, va.gov explains which expenses (for example, medical) can reduce the income that counts. Rates differ for families with dependent children.",
           "any": [
             {"all": [
               {"field": "is_veteran", "op": "eq", "value": true},
@@ -87,20 +87,20 @@
           ]
         }
       ],
-      "result_description": "Если условия выполняются, родитель, возможно, может претендовать на пенсию VA с надбавкой Aid & Attendance. Решение принимает VA после рассмотрения заявления.",
-      "unlikely_description": "Скорее всего, пенсия VA с надбавкой Aid & Attendance не подойдёт: не выполнены условия, указанные ниже. Если ответы неточны, сверьтесь с va.gov.",
+      "result_description": "Possibly a fit. If the conditions hold, your parent may be able to apply for a VA pension with Aid and Attendance. The VA makes the decision after reviewing the claim.",
+      "unlikely_description": "Unlikely to apply, based on what you told us. The reasons are below. If an answer was a guess, it's worth checking the details on va.gov.",
       "documents": [
-        "DD214 или другой документ об увольнении с военной службы",
-        "VA Form 21-2680 (заполняет врач)",
-        "VA Form 21-0779, если родитель в доме престарелых",
-        "Сведения о доходах и активах родителя (и супруга)",
-        "Для вдовы/вдовца: свидетельство о браке и свидетельство о смерти ветерана"
+        "DD214 or another military discharge document",
+        "VA Form 21-2680 (completed by a doctor)",
+        "VA Form 21-0779 if your parent is in a nursing home",
+        "Income and asset records for your parent (and spouse)",
+        "For a surviving spouse: marriage certificate and the veteran's death certificate"
       ]
     },
     {
       "id": "medicaid_ltc",
-      "name": "Medicaid: долгосрочный уход (LTSS)",
-      "summary": "Medicaid — основной плательщик долгосрочного ухода в США (дом престарелых, помощь на дому). Для людей 65+ доход обычно оценивается по методике SSI, учитываются и активы. Лимиты и программы зависят от штата.",
+      "name": "Medicaid long-term care",
+      "summary": "Medicaid is the main payer for long-term care in the US, both in nursing homes and at home. For people 65 and older, income is usually assessed with SSI rules, and assets count too. Limits and programs depend on the state.",
       "state": null,
       "source_url": "https://www.medicaid.gov/medicaid/eligibility-policy",
       "amounts_source_urls": [],
@@ -110,19 +110,19 @@
         "income_limit_cents": null,
         "asset_limit_cents": null
       },
-      "amounts_note": "Лимиты дохода и активов устанавливает штат — здесь они не указаны. Уточните в Medicaid-агентстве своего штата.",
+      "amounts_note": "Income and asset limits are set by each state, so they aren't listed here. Your state's Medicaid agency can tell you the current ones.",
       "input_fields": ["age", "state", "needs_help_daily_activities", "in_nursing_home", "annual_income_cents", "net_worth_cents"],
       "conditions": [
         {
           "id": "age_or_disability",
           "on_fail": "check",
-          "check": "Возраст 65+ (или инвалидность/слепота — тогда действуют те же правила SSI).",
+          "check": "Age 65 or older (or a disability or blindness, which follows the same SSI rules).",
           "field": "age", "op": "gte", "value": 65
         },
         {
           "id": "needs_care",
           "on_fail": "check",
-          "check": "Потребность в уходе: штат оценивает, нужен ли уровень ухода дома престарелых или помощь на дому.",
+          "check": "Need for care: the state assesses whether a nursing-home level of care or care at home is needed.",
           "any": [
             {"field": "needs_help_daily_activities", "op": "eq", "value": true},
             {"field": "in_nursing_home", "op": "eq", "value": true}
@@ -131,36 +131,36 @@
         {
           "id": "income",
           "on_fail": "check",
-          "check": "Доход не выше лимита штата.",
+          "check": "Income at or below the state limit.",
           "field": "annual_income_cents", "op": "lte", "ref": "income_limit_cents"
         },
         {
           "id": "assets",
           "on_fail": "check",
-          "check": "Активы не выше лимита штата. Передача активов за 5 лет до заявления может привести к отказу.",
+          "check": "Assets at or below the state limit. Giving away or selling assets below value within 5 years before applying can lead to a denial, so it helps to ask before moving money.",
           "field": "net_worth_cents", "op": "lte", "ref": "asset_limit_cents"
         }
       ],
-      "result_description": "Возможно, родитель может претендовать на Medicaid для долгосрочного ухода. Решение принимает штат.",
-      "unlikely_description": "Скорее всего, Medicaid для долгосрочного ухода не подойдёт: не выполнены условия, указанные ниже. Окончательно решает штат.",
+      "result_description": "Possibly a fit. Your parent may be able to apply for Medicaid long-term care. The state makes the decision.",
+      "unlikely_description": "Unlikely to apply, based on what you told us. The reasons are below. The state makes the final decision.",
       "documents": [
-        "Документ, удостоверяющий личность и гражданство/иммиграционный статус",
-        "Сведения о доходах (Social Security, пенсии)",
-        "Выписки по счетам и сведения об активах за последние 5 лет",
-        "Медицинские документы о потребности в уходе"
+        "Proof of identity and citizenship or immigration status",
+        "Income records (Social Security, pensions)",
+        "Bank statements and asset records for the last 5 years",
+        "Medical records showing the need for care"
       ]
     },
     {
       "id": "dependent_care_credit",
-      "name": "Налоговый кредит на уход за иждивенцем (Child and Dependent Care Credit)",
-      "summary": "Налоговый кредит для того, кто оплачивает уход за родителем, неспособным себя обслуживать, чтобы иметь возможность работать. Родитель должен быть иждивенцем (или мог бы им быть, если бы не его доход) и жить с вами больше половины года.",
+      "name": "Dependent Care Credit (IRS)",
+      "summary": "A tax credit for someone who pays for the care of a parent who can't look after themselves, so that the caregiver can keep working. The parent must be a dependent (or would be, except for their income) and live with you for more than half of the year.",
       "state": null,
       "source_url": "https://www.irs.gov/taxtopics/tc602",
       "amounts_source_urls": [],
       "last_verified": "2026-11-14",
       "amounts_valid_until": null,
       "amounts": {},
-      "amounts_note": "Суммы кредита здесь не рассчитываются.",
+      "amounts_note": "Credit amounts aren't calculated here.",
       "input_fields": [
         "needs_help_daily_activities",
         "lives_with_caregiver_over_half_year",
@@ -171,106 +171,106 @@
         {
           "id": "incapable_of_self_care",
           "on_fail": "unlikely",
-          "check": "Родитель не может сам позаботиться о гигиене и питании или нуждается в постоянном присмотре.",
-          "fail_text": "Родителю не нужна помощь в уходе за собой (по вашим ответам).",
+          "check": "Your parent can't take care of their own hygiene or nutrition, or needs full-time attention.",
+          "fail_text": "Based on your answers, your parent does not need help with self-care, which this credit requires.",
           "field": "needs_help_daily_activities", "op": "eq", "value": true
         },
         {
           "id": "lives_with_you",
           "on_fail": "unlikely",
-          "check": "Родитель жил с вами больше половины года.",
-          "fail_text": "Родитель жил с вами не больше половины года (по вашим ответам).",
+          "check": "Your parent lived with you for more than half of the year.",
+          "fail_text": "Based on your answers, your parent lived with you for half of the year or less, and this credit needs more than half.",
           "field": "lives_with_caregiver_over_half_year", "op": "eq", "value": true
         },
         {
           "id": "support_test",
           "on_fail": "unlikely",
-          "check": "Вы обеспечиваете больше 50% всей поддержки родителя за год (тест поддержки, IRS Pub. 501).",
-          "fail_text": "Вы обеспечиваете не больше 50% поддержки родителя (по вашим ответам).",
+          "check": "You provide more than 50% of your parent's total support for the year (the support test, IRS Pub. 501).",
+          "fail_text": "Based on your answers, you provide 50% or less of your parent's support, and this credit needs more than half.",
           "field": "caregiver_provides_over_half_support", "op": "eq", "value": true
         },
         {
           "id": "work_related",
           "on_fail": "unlikely",
-          "check": "Расходы на уход нужны, чтобы вы (и супруг при совместной декларации) могли работать или искать работу.",
-          "fail_text": "Расходы на уход не нужны для вашей работы или поиска работы (по вашим ответам).",
+          "check": "The care expenses are what lets you (and your spouse, if filing jointly) work or look for work.",
+          "fail_text": "Based on your answers, the care expenses aren't tied to your work or job search, which this credit requires.",
           "field": "caregiver_works", "op": "eq", "value": true
         }
       ],
-      "always_check": ["Возможно, подходит — проверьте у налогового специалиста."],
-      "result_description": "Возможно, вы можете заявить налоговый кредит на уход за родителем. Проверьте у налогового специалиста.",
-      "unlikely_description": "Скорее всего, кредит не подойдёт: не выполнены условия, указанные ниже.",
+      "always_check": ["Possibly a fit, but tax rules have exceptions. A tax professional can confirm it for your situation."],
+      "result_description": "Possibly a fit. You may be able to claim the Dependent Care Credit for your parent's care. A tax professional can confirm it.",
+      "unlikely_description": "Unlikely to apply, based on what you told us. The reasons are below.",
       "documents": [
-        "Чеки и счета за уход с именем, адресом и TIN/SSN поставщика услуг",
-        "Подтверждение расходов на содержание родителя (для теста 50% поддержки)",
-        "Форма 2441 к налоговой декларации"
+        "Receipts and invoices for care with the provider's name, address and TIN/SSN",
+        "Proof of what you spent supporting your parent (for the 50% support test)",
+        "Form 2441 with your tax return"
       ]
     },
     {
       "id": "va_caregiver_pcafc",
-      "name": "VA: программа поддержки семейных ухаживающих (PCAFC)",
-      "summary": "Программа VA для семейных ухаживающих за ветераном с рейтингом нарушения здоровья 70% и выше, которому нужен постоянный личный уход. Для основного ухаживающего предусмотрено ежемесячное содержание (stipend).",
+      "name": "VA Program of Comprehensive Assistance for Family Caregivers",
+      "summary": "A VA program for family caregivers of a veteran with a disability rating of 70% or higher who needs ongoing personal care. The primary caregiver may receive a monthly stipend, training and support.",
       "state": null,
       "source_url": "https://www.va.gov/family-and-caregiver-benefits/health-and-disability/comprehensive-assistance-for-family-caregivers/",
       "amounts_source_urls": [],
       "last_verified": "2026-11-14",
       "amounts_valid_until": null,
       "amounts": {},
-      "amounts_note": "Размер содержания зависит от уровня помощи и региона, уточните на va.gov.",
+      "amounts_note": "The stipend depends on the level of care and the region. va.gov has the details.",
       "input_fields": ["is_veteran", "va_service_rating_70_plus", "needs_help_daily_activities"],
       "conditions": [
         {
           "id": "veteran",
           "on_fail": "unlikely",
-          "check": "Родитель — ветеран, уволенный с военной службы (или с датой увольнения по медицинским причинам).",
-          "fail_text": "Родитель не является ветераном (по вашим ответам).",
+          "check": "Your parent is a veteran who was discharged from the military (or has a medical discharge date).",
+          "fail_text": "Based on your answers, your parent is not a veteran, and this program is for veterans' caregivers.",
           "field": "is_veteran", "op": "eq", "value": true
         },
         {
           "id": "rating_70",
           "on_fail": "unlikely",
-          "check": "Рейтинг нарушения здоровья VA (отдельный или суммарный) — 70% или выше.",
-          "fail_text": "Рейтинг нарушения здоровья VA ниже 70% (по вашим ответам).",
+          "check": "VA disability rating (individual or combined) of 70% or higher.",
+          "fail_text": "Based on your answers, the VA disability rating is below 70%, which this program requires.",
           "field": "va_service_rating_70_plus", "op": "eq", "value": true
         },
         {
           "id": "needs_care",
           "on_fail": "unlikely",
-          "check": "Ветерану нужен личный уход.",
-          "fail_text": "Ветерану не нужен личный уход (по вашим ответам).",
+          "check": "The veteran needs personal care services.",
+          "fail_text": "Based on your answers, the veteran does not need personal care, which this program is meant for.",
           "field": "needs_help_daily_activities", "op": "eq", "value": true
         },
         {
           "id": "six_months",
           "on_fail": "check",
-          "check": "Ветерану нужно не меньше 6 месяцев непрерывного личного ухода.",
+          "check": "The veteran needs at least 6 months of continuous, in-person personal care.",
           "manual": true
         },
         {
           "id": "va_healthcare",
           "on_fail": "check",
-          "check": "Ветеран записан в систему здравоохранения VA (VA health care).",
+          "check": "The veteran is enrolled in VA health care.",
           "manual": true
         },
         {
           "id": "caregiver",
           "on_fail": "check",
-          "check": "Ухаживающему не меньше 18 лет, и он родственник ветерана (супруг, сын, дочь, родитель, член семьи) или живёт с ветераном постоянно либо готов жить.",
+          "check": "The caregiver is at least 18 years old and is a family member of the veteran (spouse, son, daughter, parent, step or extended family), or lives full time with the veteran or is willing to.",
           "manual": true
         }
       ],
-      "result_description": "Возможно, семья может претендовать на программу поддержки ухаживающих VA. Решение принимает VA.",
-      "unlikely_description": "Скорее всего, программа поддержки ухаживающих VA не подойдёт: не выполнены условия, указанные ниже.",
+      "result_description": "Possibly a fit. Your family may be able to apply for the VA caregiver support program. The VA makes the decision.",
+      "unlikely_description": "Unlikely to apply, based on what you told us. The reasons are below.",
       "documents": [
-        "Заявление VA Form 10-10CG (заполняют ветеран и ухаживающий вместе)",
-        "Документы о военной службе ветерана",
-        "Медицинские документы о потребности в уходе"
+        "VA Form 10-10CG (a joint application, completed by the veteran and the caregiver together)",
+        "The veteran's military service records",
+        "Medical records showing the need for care"
       ]
     },
     {
       "id": "medicare_savings_extra_help",
-      "name": "Medicare Savings Programs и Extra Help: помощь с оплатой Medicare и лекарств",
-      "summary": "Medicare Savings Programs (QMB, SLMB, QI, QDWI) помогают оплачивать взносы и расходы Medicare. Extra Help помогает оплачивать лекарства по Medicare Part D. Для обеих программ доход и активы должны быть ниже лимитов.",
+      "name": "Medicare Savings Programs and Extra Help",
+      "summary": "Medicare Savings Programs (QMB, SLMB, QI, QDWI) help pay Medicare premiums and costs. Extra Help pays part of Medicare Part D drug costs. Both are for people with income and resources below set limits.",
       "state": null,
       "source_url": "https://www.medicare.gov/basics/costs/help/medicare-savings-programs",
       "amounts_source_urls": [],
@@ -280,37 +280,37 @@
         "income_limit_cents": null,
         "asset_limit_cents": null
       },
-      "amounts_note": "Лимиты устанавливаются федерально или штатом, уточните на medicare.gov.",
+      "amounts_note": "Limits are set federally or by the state. medicare.gov lists the current ones.",
       "input_fields": ["has_medicare", "annual_income_cents", "net_worth_cents"],
       "conditions": [
         {
           "id": "medicare",
           "on_fail": "unlikely",
-          "check": "У родителя есть Medicare (для SLMB и QI нужны и Part A, и Part B).",
-          "fail_text": "У родителя нет Medicare (по вашим ответам).",
+          "check": "Your parent has Medicare (SLMB and QI need both Part A and Part B).",
+          "fail_text": "Based on your answers, your parent does not have Medicare, and these programs are for people who do.",
           "field": "has_medicare", "op": "eq", "value": true
         },
         {
           "id": "income",
           "on_fail": "check",
-          "check": "Доход ниже лимита Medicare Savings Programs или Extra Help. Некоторые штаты не учитывают часть дохода, поэтому подать заявление стоит и при доходе чуть выше лимита.",
+          "check": "Income below the Medicare Savings Programs or Extra Help limit. Some states don't count part of the income, so it's worth applying even slightly above the limit.",
           "field": "annual_income_cents", "op": "lte", "ref": "income_limit_cents"
         },
         {
           "id": "assets",
           "on_fail": "check",
-          "check": "Активы ниже лимита программы.",
+          "check": "Resources below the program limit.",
           "field": "net_worth_cents", "op": "lte", "ref": "asset_limit_cents"
         }
       ],
       "always_check": [
-        "Medicare Savings Programs оформляются через штат. Extra Help назначается автоматически при полном Medicaid, помощи штата с оплатой Part B или выплатах SSI; иначе — заявление в Social Security. Подробнее: https://www.medicare.gov/basics/costs/help/drug-costs"
+        "Medicare Savings Programs are applied for through the state. Extra Help comes automatically with full Medicaid, state help paying Part B premiums, or SSI; otherwise you apply through Social Security. Details: https://www.medicare.gov/basics/costs/help/drug-costs"
       ],
-      "result_description": "Возможно, родитель может получить помощь с оплатой Medicare или лекарств. Решение принимает программа.",
-      "unlikely_description": "Скорее всего, эти программы не подойдут: они предназначены для людей с Medicare.",
+      "result_description": "Possibly a fit. Your parent may be able to get help paying Medicare costs or prescription drugs. The program makes the decision.",
+      "unlikely_description": "Unlikely to apply, based on what you told us: these programs are for people who have Medicare.",
       "documents": [
-        "Документ о доходах",
-        "Выписка о накоплениях",
+        "Proof of income",
+        "Savings and bank statements",
         "Medicare card"
       ]
     }

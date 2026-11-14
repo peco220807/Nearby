@@ -63,7 +63,7 @@ US_STATES = (
 
 
 class ScreeningAnswers(BaseModel):
-    """Ответы опроса о родителе. Любое поле можно не заполнять — тогда «нужна проверка»."""
+    """Survey answers about the parent. Every field is optional; unknown fields lead to \"needs review\"."""
     state: str | None = Field(default=None, pattern=f"^({US_STATES})$")
     age: int | None = Field(default=None, ge=0, le=130)
     is_veteran: bool | None = None
@@ -101,3 +101,33 @@ class ProgramResult(BaseModel):
 class ScreeningResult(BaseModel):
     disclaimer: str
     programs: list[ProgramResult]
+
+
+class ScenarioRequest(BaseModel):
+    """All money is in cents. Negative values are rejected."""
+    savings_cents: int = Field(ge=0)
+    monthly_income_cents: int = Field(ge=0)
+    home_care_hourly_cents: int | None = Field(default=None, ge=0)
+    home_care_hours_per_week: float | None = Field(default=None, ge=0, le=168)
+    include_disabled: bool = False  # показать и сценарии с непроверенными источниками
+
+
+class ScenarioResult(BaseModel):
+    id: str
+    name: str
+    monthly_cost_cents: int
+    monthly_gap_cents: int
+    months_covered: int | None
+    status: str
+    source_url: str | None
+    source_name: str
+    as_of: str | None
+    kind: str
+    note: str
+    hourly_cents: int | None = None       # только для ухода дома
+    hours_per_week: float | None = None   # только для ухода дома
+
+
+class ScenariosResponse(BaseModel):
+    disclaimer: str
+    scenarios: list[ScenarioResult]

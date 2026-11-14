@@ -13,7 +13,7 @@ async function request(path, options = {}) {
         ? detail
         : Array.isArray(detail)
           ? detail.map((d) => d.msg).join("; ")
-          : `Ошибка ${res.status}`;
+          : `Request failed (${res.status})`;
     throw new Error(message);
   }
   return data;
@@ -38,5 +38,9 @@ export const addHelpHours = (token, data) => post(`/households/${enc(token)}/hel
 // -> { members, transfers, help_share_percent }
 export const getBalance = (token) => request(`/households/${enc(token)}/balance`);
 
-// Ответы опроса (все поля необязательные) -> { disclaimer, programs }
+// Survey answers (every field optional) -> { disclaimer, programs }
 export const screenEligibility = (answers) => post("/eligibility/screen", answers);
+
+// { savings_cents, monthly_income_cents, home_care_hourly_cents?, home_care_hours_per_week?, include_disabled? }
+// -> { disclaimer, scenarios }
+export const calculateScenarios = (body) => post("/scenarios/calculate", body);

@@ -8,8 +8,10 @@ from app.db import Base, engine, SessionLocal
 from app import models
 from app.balance import ExpenseData, split_equal, compute_balances, compute_transfers, help_shares
 from app.eligibility.screen import screen
+from app.scenarios.calculator import calculate, load_defaults
 from app.schemas import (
     HouseholdCreate, HouseholdOut, ExpenseCreate, HelpHoursCreate, BalanceOut, ScreeningAnswers, ScreeningResult,
+    ScenarioRequest, ScenariosResponse,
 )
 
 @asynccontextmanager
@@ -40,7 +42,7 @@ def get_db():
 def get_household_or_404(token: str, db: Session) -> models.Household:
     household = db.query(models.Household).filter_by(share_token=token).first()
     if household is None:
-        raise HTTPException(status_code=404, detail="Семья не найдена")
+        raise HTTPException(status_code=404, detail="Household not found")
     return household
 
 
@@ -69,7 +71,7 @@ def add_expense(token: str, data: ExpenseCreate, db: Session = Depends(get_db)):
     household = get_household_or_404(token, db)
     member_ids = sorted(m.id for m in household.members)
     if data.paid_by_id not in member_ids:
-        raise HTTPException(status_code=400, detail="Участник не из этой семьи")
+        raise HTTPException(status_code=400, detail="Member does not belong to this household")
 
     expense = models.Expense(
         household_id=household.id,
@@ -95,7 +97,7 @@ def add_expense(token: str, data: ExpenseCreate, db: Session = Depends(get_db)):
 def add_help_hours(token: str, data: HelpHoursCreate, db: Session = Depends(get_db)):
     household = get_household_or_404(token, db)
     if data.member_id not in {m.id for m in household.members}:
-        raise HTTPException(status_code=400, detail="Участник не из этой семьи")
+        raise HTTPException(status_code=400, detail="Member does not belong to this household")
 
     entry = models.CareEntry(
         household_id=household.id,
@@ -139,3 +141,19 @@ def get_balance(token: str, db: Session = Depends(get_db)):
 @app.post("/eligibility/screen", response_model=ScreeningResult)
 def eligibility_screen(answers: ScreeningAnswers):
     return screen(answers.model_dump())
+
+
+@app.post("/scenarios/calculate", response_model=ScenariosResponse)
+def scenarios_calculate(data: ScenarioRequest):
+    defaults = load_defaults()
+    return {
+        "disclaimer": defaults["disclaimer"],
+        "scenarios": calculate(
+            savings_cents=data.savings_cents,
+            monthly_income_cents=data.monthly_income_cents,
+            scenarios=defaults["scenarios"],
+            home_care_hourly_cents=data.home_care_hourly_cents,
+            home_care_hours_per_week=data.home_care_hours_per_week,
+            include_disabled=data.include_disabled,
+        ),
+    }

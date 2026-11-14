@@ -1,11 +1,11 @@
-"""Скрининг льгот: правила — данные (rules.json), здесь только их вычисление.
+"""Benefit screening: the rules are data (rules.json); this module only evaluates them.
 
-Каждое условие даёт True / False / None (не хватает данных или сумма не подтверждена).
-Статус программы:
-- «скорее не подходит» — нарушено условие с on_fail="unlikely" (в reasons идёт его fail_text,
-  описание — unlikely_description);
-- «нужна проверка»    — есть неизвестные или условие с on_fail="check" не выполнено;
-- «возможно»          — все условия выполнены. Гарантий нет никогда.
+Each condition yields True / False / None (missing data or an unverified amount).
+Program status:
+- "unlikely"      - a condition with on_fail="unlikely" failed (its fail_text goes to reasons,
+  unlikely_description becomes the description);
+- "needs review"  - something is unknown, or a condition with on_fail="check" failed;
+- "possible"      - every condition is met. Never a promise; the program decides.
 """
 import json
 from datetime import date
@@ -13,9 +13,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-POSSIBLE = "возможно"
-UNLIKELY = "скорее не подходит"
-NEEDS_CHECK = "нужна проверка"
+POSSIBLE = "possible"
+UNLIKELY = "unlikely"
+NEEDS_CHECK = "needs review"
 
 RULES_PATH = Path(__file__).with_name("rules.json")
 
@@ -27,7 +27,7 @@ def load_rules() -> dict:
 
 
 def _amount(rule: dict, key: str, today: date) -> int | None:
-    """Сумма из правила; None, если не подтверждена или срок её действия истёк."""
+    """Amount from the rule; None if unverified or expired."""
     valid_until = rule.get("amounts_valid_until")
     if valid_until and today > date.fromisoformat(valid_until):
         return None
@@ -59,7 +59,7 @@ def _evaluate(cond: dict, answers: dict[str, Any], rule: dict, today: date) -> b
         return actual <= expected
     if op == "gte":
         return actual >= expected
-    raise ValueError(f"Неизвестная операция: {op}")
+    raise ValueError(f"Unknown operation: {op}")
 
 
 def _applies_to_state(rule: dict, state: str | None) -> bool:
@@ -73,7 +73,7 @@ def screen_rule(rule: dict, answers: dict[str, Any], today: date) -> dict:
 
     if rule["state"] is not None and answers.get("state") is None:
         status = NEEDS_CHECK
-        to_check.append(f"Программа действует в штате {rule['state']}. Укажите штат родителя.")
+        to_check.append(f"This program applies in the state of {rule['state']}. Please enter your parent's state.")
 
     for cond in rule["conditions"]:
         result = _evaluate(cond, answers, rule, today)
@@ -107,7 +107,7 @@ def screen_rule(rule: dict, answers: dict[str, Any], today: date) -> dict:
 
 
 def screen(answers: dict[str, Any], rules: list[dict] | None = None, today: date | None = None) -> dict:
-    """Ответы опроса → список программ со статусом. Программы чужого штата не показываются."""
+    """Survey answers -> programs with a status. Programs for another state are hidden."""
     data = load_rules()
     rules = data["rules"] if rules is None else rules
     today = today or date.today()

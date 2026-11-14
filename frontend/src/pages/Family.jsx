@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { getHousehold, getBalance, addExpense, addHelpHours } from "../api.js";
-import { parseCents, formatCents } from "../money.js";
+import { parseCents, formatMoney } from "../money.js";
+import Layout from "../components/Layout.jsx";
+import { ArrowRight } from "../components/icons.jsx";
 
-const TABS = { balance: "Баланс", expense: "Расход", help: "Часы помощи родителю" };
-const CATEGORIES = { medication: "Лекарства", care: "Уход", transport: "Транспорт", other: "Другое" };
-// Локальная дата пользователя (toISOString дал бы дату по UTC)
+const TABS = { balance: "Who's helping", expense: "Add expense", help: "Log help hours" };
+const CATEGORIES = { medication: "Medication", care: "Care", transport: "Transport", other: "Other" };
+
+// Local date for the user (toISOString would give the UTC date)
 const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-// Как на бэкенде: 0 < часы <= 24; не больше двух знаков после запятой
+// Same rule as the backend: 0 < hours <= 24, at most two decimals
 function parseHours(input) {
   const s = String(input).trim().replace(",", ".");
   if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
@@ -29,32 +32,44 @@ export default function Family() {
     getHousehold(token).then(setHousehold, (err) => setError(err.message));
   }, [token]);
 
-  if (error) return <p role="alert">Ошибка: {error}</p>;
-  if (!household) return <p>Загрузка…</p>;
-
   return (
-    <main>
-      <p>
-        <Link to="/">← На главную</Link>
-      </p>
-      <h1>{household.name}</h1>
-      {household.parent_name && <p>Родитель: {household.parent_name}</p>}
-      <p>
-        Ссылка для семьи: <code>{window.location.href}</code>
-      </p>
-      <nav>
-        {Object.entries(TABS).map(([key, label]) => (
-          <button key={key} type="button" onClick={() => setTab(key)} disabled={tab === key}>
-            {label}
-          </button>
-        ))}
-      </nav>
-      <hr />
-      {tab === "balance" && <BalanceTab token={token} members={household.members} />}
-      {tab === "expense" && <ExpenseTab token={token} members={household.members} />}
-      {tab === "help" && <HelpTab token={token} members={household.members} />}
-    </main>
+    <Layout wide>
+      {error && (
+        <p role="alert" className="alert">
+          {error}
+        </p>
+      )}
+      {!error && !household && <p>Loading…</p>}
+      {household && (
+        <>
+          <h1>{household.name}</h1>
+          <p className="lead">
+            Caring for {household.parent_name || "a parent"} is shared work. Track who's helping, and what it costs.
+          </p>
+          <div className="share-box">
+            <span>Your family's private link. Anyone with it can add to this ledger:</span>
+            <code>{window.location.href}</code>
+          </div>
+          <div className="tabs" role="tablist" aria-label="Ledger sections">
+            {Object.entries(TABS).map(([key, label]) => (
+              <button key={key} type="button" role="tab" className="tab" aria-selected={tab === key} onClick={() => setTab(key)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {tab === "balance" && <BalanceTab token={token} members={household.members} />}
+          {tab === "expense" && <ExpenseTab token={token} members={household.members} />}
+          {tab === "help" && <HelpTab token={token} members={household.members} />}
+        </>
+      )}
+    </Layout>
   );
+}
+
+function netText(net) {
+  if (net > 0) return { cls: "owed", text: `is owed ${formatMoney(net)}` };
+  if (net < 0) return { cls: "owes", text: `owes ${formatMoney(-net)}` };
+  return { cls: "even", text: "settled up" };
 }
 
 function BalanceTab({ token, members }) {
@@ -66,65 +81,91 @@ function BalanceTab({ token, members }) {
     getBalance(token).then(setBalance, (err) => setError(err.message));
   }, [token]);
 
-  if (error) return <p role="alert">Ошибка: {error}</p>;
-  if (!balance) return <p>Загрузка…</p>;
+  if (error)
+    return (
+      <p role="alert" className="alert">
+        {error}
+      </p>
+    );
+  if (!balance) return <p>Loading…</p>;
 
-  const help = Object.entries(balance.help_share_percent);
+  const help = Object.entries(balance.help_share_percent).sort((a, b) => b[1] - a[1]);
+  const topHelper = help.find(([, pct]) => pct > 0);
 
   return (
     <section>
-      <h2>Баланс</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Участник</th>
-            <th>Заплатил</th>
-            <th>Доля расходов</th>
-            <th>Итог</th>
-          </tr>
-        </thead>
-        <tbody>
-          {balance.members.map((b) => (
-            <tr key={b.member_id}>
-              <td>{b.name}</td>
-              <td>{formatCents(b.paid_cents)}</td>
-              <td>{formatCents(b.owed_cents)}</td>
-              <td>
-                {b.net_cents > 0 && `+${formatCents(b.net_cents)} (ему должны)`}
-                {b.net_cents < 0 && `${formatCents(b.net_cents)} (он должен)`}
-                {b.net_cents === 0 && "0.00"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h2>Who's helping</h2>
+      <p className="hint">Everyone's share so far, in money and in time.</p>
+      <div className="card-grid card-grid-3" style={{ marginBottom: 16 }}>
+        {balance.members.map((b) => {
+          const net = netText(b.net_cents);
+          return (
+            <article key={b.member_id} className="card member" style={{ marginBottom: 0 }}>
+              <span className="member-name">{b.name}</span>
+              <span className={`member-net ${net.cls}`}>{net.text}</span>
+              <span className="member-row">
+                Paid <b>{formatMoney(b.paid_cents)}</b>
+              </span>
+              <span className="member-row">
+                Share of expenses <b>{formatMoney(b.owed_cents)}</b>
+              </span>
+            </article>
+          );
+        })}
+      </div>
 
-      <h3>Переводы</h3>
-      {balance.transfers.length === 0 ? (
-        <p>Все в расчёте.</p>
-      ) : (
-        <ul>
-          {balance.transfers.map((t, i) => (
-            <li key={i}>
-              {names[t.from_id]} → {names[t.to_id]}: {formatCents(t.amount_cents)}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="card-grid card-grid-2">
+        <div className="card">
+          <h3>To even things out</h3>
+          <p className="hint">The fewest transfers that bring everyone to the same share.</p>
+          {balance.transfers.length === 0 ? (
+            <p className="muted">Everyone's even. Nothing to settle right now.</p>
+          ) : (
+            <div>
+              {balance.transfers.map((t, i) => (
+                <div key={i} className="transfer">
+                  <strong>{names[t.from_id]}</strong> pays <ArrowRight /> <strong>{names[t.to_id]}</strong>
+                  <span className="amount">{formatMoney(t.amount_cents)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-      <h3>Часы помощи родителю</h3>
-      {help.length === 0 ? (
-        <p>Часов пока нет.</p>
-      ) : (
-        <ul>
-          {help.map(([id, pct]) => (
-            <li key={id}>
-              {names[id]}: {pct}%
-            </li>
-          ))}
-        </ul>
-      )}
+        <div className="card">
+          <h3>Time given</h3>
+          {help.length === 0 ? (
+            <p className="muted">No hours logged yet. When someone helps, log it here. It counts.</p>
+          ) : (
+            <div>
+              {topHelper && (
+                <p className="ack">
+                  {names[topHelper[0]]} has covered {topHelper[1]}% of the help hours logged so far. Thank you.
+                </p>
+              )}
+              {help.map(([id, pct]) => (
+                <div key={id} className="transfer">
+                  <strong>{names[id]}</strong>
+                  <span className="amount">{pct}%</span>
+                </div>
+              ))}
+              <p className="hint" style={{ marginTop: 8 }}>
+                Each person's share of all the help hours the family has logged.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
+  );
+}
+
+function StatusLine({ status }) {
+  if (!status) return null;
+  return (
+    <p role={status.error ? "alert" : "status"} className={status.error ? "alert" : "notice"}>
+      {status.text}
+    </p>
   );
 }
 
@@ -138,7 +179,7 @@ function ExpenseTab({ token, members }) {
     e.preventDefault();
     const cents = parseCents(form.amount);
     if (!cents) {
-      setStatus("Ошибка: сумма должна быть больше нуля, не больше двух знаков после точки");
+      setStatus({ error: true, text: "Amount must be greater than zero, with at most two decimals." });
       return;
     }
     try {
@@ -150,60 +191,57 @@ function ExpenseTab({ token, members }) {
         expense_date: form.date,
       });
       setForm({ ...empty, paidBy: form.paidBy });
-      setStatus(`Расход ${formatCents(cents)} добавлен`);
+      setStatus({ error: false, text: `Added ${formatMoney(cents)}. It's split equally, so everyone's share is updated.` });
     } catch (err) {
-      setStatus(`Ошибка: ${err.message}`);
+      setStatus({ error: true, text: err.message });
     }
   }
 
   return (
-    <section>
-      <h2>Новый расход</h2>
-      <form onSubmit={onSubmit}>
-        <p>
-          <label>
-            Кто заплатил{" "}
-            <select value={form.paidBy} onChange={set("paidBy")}>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </p>
-        <p>
-          <label>
-            Сумма <input value={form.amount} onChange={set("amount")} inputMode="decimal" placeholder="12.50" required />
-          </label>
-        </p>
-        <p>
-          <label>
-            Категория{" "}
-            <select value={form.category} onChange={set("category")}>
-              {Object.entries(CATEGORIES).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </p>
-        <p>
-          <label>
-            Описание <input value={form.description} onChange={set("description")} maxLength={200} />
-          </label>
-        </p>
-        <p>
-          <label>
-            Дата <input type="date" value={form.date} onChange={set("date")} required />
-          </label>
-        </p>
-        <p>Делится поровну между всеми участниками.</p>
-        <button type="submit">Добавить</button>
-        {status && <p role="status">{status}</p>}
-      </form>
-    </section>
+    <form onSubmit={onSubmit} className="card">
+      <h2>Add an expense</h2>
+      <div className="card-grid card-grid-2">
+        <label className="field">
+          Who paid
+          <select value={form.paidBy} onChange={set("paidBy")}>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          Amount, $
+          <input value={form.amount} onChange={set("amount")} inputMode="decimal" placeholder="e.g., 12.50" required />
+        </label>
+        <label className="field">
+          Category
+          <select value={form.category} onChange={set("category")}>
+            {Object.entries(CATEGORIES).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          Date
+          <input type="date" value={form.date} onChange={set("date")} required />
+        </label>
+      </div>
+      <label className="field">
+        Description <span className="field-help">(optional)</span>
+        <input value={form.description} onChange={set("description")} maxLength={200} />
+      </label>
+      <p className="hint">Split equally between everyone, so no one carries it alone.</p>
+      <StatusLine status={status} />
+      <div className="action-bar">
+        <button type="submit" className="btn btn-accent">
+          Add expense
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -217,7 +255,7 @@ function HelpTab({ token, members }) {
     e.preventDefault();
     const hours = parseHours(form.hours);
     if (hours === null) {
-      setStatus("Ошибка: часы должны быть больше 0 и не больше 24, до двух знаков после запятой");
+      setStatus({ error: true, text: "Hours must be greater than 0 and at most 24, with up to two decimals." });
       return;
     }
     try {
@@ -228,47 +266,46 @@ function HelpTab({ token, members }) {
         note: form.note.trim() || null,
       });
       setForm({ ...empty, member: form.member });
-      setStatus(`Записано ${hours} ч`);
+      setStatus({ error: false, text: `Logged ${hours} hour${hours === 1 ? "" : "s"}. Thank you for the time you give.` });
     } catch (err) {
-      setStatus(`Ошибка: ${err.message}`);
+      setStatus({ error: true, text: err.message });
     }
   }
 
   return (
-    <section>
-      <h2>Часы помощи родителю</h2>
-      <form onSubmit={onSubmit}>
-        <p>
-          <label>
-            Кто помогал{" "}
-            <select value={form.member} onChange={set("member")}>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </p>
-        <p>
-          <label>
-            Часы{" "}
-            <input type="number" value={form.hours} onChange={set("hours")} min="0.01" max="24" step="0.01" required />
-          </label>
-        </p>
-        <p>
-          <label>
-            Дата <input type="date" value={form.date} onChange={set("date")} required />
-          </label>
-        </p>
-        <p>
-          <label>
-            Заметка <input value={form.note} onChange={set("note")} maxLength={200} />
-          </label>
-        </p>
-        <button type="submit">Записать</button>
-        {status && <p role="status">{status}</p>}
-      </form>
-    </section>
+    <form onSubmit={onSubmit} className="card">
+      <h2>Log help hours</h2>
+      <p className="hint">Time counts too. Hours go toward each person's share of the load, not toward money.</p>
+      <div className="card-grid card-grid-2">
+        <label className="field">
+          Who helped
+          <select value={form.member} onChange={set("member")}>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          Hours
+          <input type="number" value={form.hours} onChange={set("hours")} min="0.01" max="24" step="0.01" required />
+        </label>
+        <label className="field">
+          Date
+          <input type="date" value={form.date} onChange={set("date")} required />
+        </label>
+        <label className="field">
+          Note <span className="field-help">(optional)</span>
+          <input value={form.note} onChange={set("note")} maxLength={200} />
+        </label>
+      </div>
+      <StatusLine status={status} />
+      <div className="action-bar">
+        <button type="submit" className="btn btn-accent">
+          Log hours
+        </button>
+      </div>
+    </form>
   );
 }

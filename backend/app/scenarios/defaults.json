@@ -1,0 +1,51 @@
+{
+  "disclaimer": "This is a planning estimate. Actual prices depend on the city and the facility.",
+  "scenarios": [
+    {
+      "id": "home_care",
+      "name": "In-home care (hired aide)",
+      "monthly_cost_cents": null,
+      "hourly_cents_default": 3000,
+      "hours_per_week_default": 20,
+      "source_url": null,
+      "source_name": "Your estimate",
+      "as_of": null,
+      "kind": "user_estimate",
+      "note": "This one is built from your own numbers: the hourly rate and the hours you entered (defaults: $30/hour, 20 hours a week). Monthly cost = hours per week × 52 / 12 × rate, rounded down to the cent. For comparison, CareScout's 2025 median for a non-medical caregiver is $35/hour.",
+      "enabled_by_default": true
+    },
+    {
+      "id": "assisted_living",
+      "name": "Assisted living",
+      "monthly_cost_cents": 620000,
+      "source_url": "https://investor.genworth.com/news-events/press-releases/detail/1054",
+      "source_name": "CareScout 2025 (Cost of Care Survey)",
+      "as_of": "2025",
+      "kind": "survey",
+      "note": "The national median for 2025, published 03/02/2026. It's a planning figure, not official statistics, and your area may be higher or lower.",
+      "enabled_by_default": true
+    },
+    {
+      "id": "memory_care",
+      "name": "Memory care",
+      "monthly_cost_cents": 669000,
+      "source_url": "https://www.aplaceformom.com/",
+      "source_name": "A Place for Mom, 2026 report",
+      "as_of": "2026",
+      "kind": "estimate",
+      "note": "Needs verification: the CareScout Cost of Care Survey 2025 has no memory care figure. This value comes from a marketing report by a company that refers families to facilities, and the report page could not be found as of 11/14/2026. Hidden by default for that reason.",
+      "enabled_by_default": false
+    },
+    {
+      "id": "nursing_home_private_room",
+      "name": "Nursing home, private room",
+      "monthly_cost_cents": 1079791,
+      "source_url": "https://investor.genworth.com/news-events/press-releases/detail/1054",
+      "source_name": "CareScout 2025 (Cost of Care Survey)",
+      "as_of": "2025",
+      "kind": "survey",
+      "note": "The national median for 2025: $355 per day, $129,575 per year. Monthly: 129,575 / 12 = $10,797.91 (rounded down to the cent). A planning figure, not official statistics.",
+      "enabled_by_default": true
+    }
+  ]
+}
