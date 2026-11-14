@@ -37,3 +37,6 @@ export const addHelpHours = (token, data) => post(`/households/${enc(token)}/hel
 
 // -> { members, transfers, help_share_percent }
 export const getBalance = (token) => request(`/households/${enc(token)}/balance`);
+
+// Ответы опроса (все поля необязательные) -> { disclaimer, programs }
+export const screenEligibility = (answers) => post("/eligibility/screen", answers);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createHousehold } from "../api.js";
 
 export default function Home() {
@@ -40,6 +40,9 @@ export default function Home() {
   return (
     <main>
       <h1>Nearby</h1>
+      <p>
+        <Link to="/benefits">Проверить льготы для родителя</Link> — без создания семьи, ответы не сохраняются.
+      </p>
       <h2>Создать семью</h2>
       <form onSubmit={onSubmit}>
         <p>

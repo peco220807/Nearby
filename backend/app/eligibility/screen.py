@@ -2,7 +2,8 @@
 
 Каждое условие даёт True / False / None (не хватает данных или сумма не подтверждена).
 Статус программы:
-- «скорее не подходит» — нарушено условие с on_fail="unlikely";
+- «скорее не подходит» — нарушено условие с on_fail="unlikely" (в reasons идёт его fail_text,
+  описание — unlikely_description);
 - «нужна проверка»    — есть неизвестные или условие с on_fail="check" не выполнено;
 - «возможно»          — все условия выполнены. Гарантий нет никогда.
 """
@@ -34,6 +35,8 @@ def _amount(rule: dict, key: str, today: date) -> int | None:
 
 
 def _evaluate(cond: dict, answers: dict[str, Any], rule: dict, today: date) -> bool | None:
+    if cond.get("manual"):
+        return None  # условие, о котором опрос не спрашивает: всегда «проверить»
     if "all" in cond:
         results = [_evaluate(c, answers, rule, today) for c in cond["all"]]
         if False in results:
@@ -78,7 +81,7 @@ def screen_rule(rule: dict, answers: dict[str, Any], today: date) -> dict:
             continue
         if result is False and cond["on_fail"] == "unlikely":
             status = UNLIKELY
-            reasons.append(cond["check"])
+            reasons.append(cond["fail_text"])  # отрицательная формулировка, не требование
         else:
             if status == POSSIBLE:
                 status = NEEDS_CHECK
@@ -91,13 +94,14 @@ def screen_rule(rule: dict, answers: dict[str, Any], today: date) -> dict:
         "name": rule["name"],
         "summary": rule["summary"],
         "status": status,
-        "result_description": rule["result_description"],
+        "result_description": rule["unlikely_description"] if status == UNLIKELY else rule["result_description"],
         "reasons": reasons,
         "to_check": to_check,
         "documents": rule["documents"],
         "source_url": rule["source_url"],
         "amounts_source_urls": rule["amounts_source_urls"],
         "amounts_note": rule["amounts_note"],
+        "amounts_valid_until": rule.get("amounts_valid_until"),
         "last_verified": rule["last_verified"],
     }
 

@@ -72,6 +72,8 @@ class ScreeningAnswers(BaseModel):
     has_spouse: bool | None = None
     needs_help_daily_activities: bool | None = None
     in_nursing_home: bool | None = None
+    va_service_rating_70_plus: bool | None = None
+    has_medicare: bool | None = None
     annual_income_cents: int | None = Field(default=None, ge=0)
     net_worth_cents: int | None = Field(default=None, ge=0)
     # про того, кто помогает родителю (для налогового кредита)
@@ -92,6 +94,7 @@ class ProgramResult(BaseModel):
     source_url: str
     amounts_source_urls: list[str]
     amounts_note: str
+    amounts_valid_until: str | None
     last_verified: str
 
 

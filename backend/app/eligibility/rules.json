@@ -35,6 +35,7 @@
           "id": "veteran_or_survivor",
           "on_fail": "unlikely",
           "check": "Родитель — ветеран или вдова/вдовец ветерана.",
+          "fail_text": "Родитель не является ветераном или вдовой/вдовцом ветерана (по вашим ответам).",
           "any": [
             {"field": "is_veteran", "op": "eq", "value": true},
             {"field": "is_surviving_spouse_of_veteran", "op": "eq", "value": true}
@@ -44,12 +45,14 @@
           "id": "wartime_service",
           "on_fail": "unlikely",
           "check": "Служба ветерана: минимум 1 день в период военного времени и требуемый срок действительной службы (90 дней до 08.09.1980, обычно 24 месяца после). Полные условия — на va.gov/pension/eligibility.",
+          "fail_text": "Служба ветерана не приходилась на военное время (по вашим ответам).",
           "field": "wartime_service", "op": "eq", "value": true
         },
         {
           "id": "needs_care",
           "on_fail": "unlikely",
           "check": "Нужна помощь другого человека в повседневных делах (мытьё, еда, одевание), или родитель большую часть дня в постели, или находится в доме престарелых из-за потери способностей, или сильно ограничено зрение. Это подтверждает врач в форме VA 21-2680.",
+          "fail_text": "Родителю не нужна помощь в повседневных делах, и он не живёт в доме престарелых (по вашим ответам).",
           "any": [
             {"field": "needs_help_daily_activities", "op": "eq", "value": true},
             {"field": "in_nursing_home", "op": "eq", "value": true}
@@ -59,6 +62,7 @@
           "id": "net_worth",
           "on_fail": "unlikely",
           "check": "Чистые активы (без дома, машины и большей части мебели, за вычетом долгов, вместе с активами супруга) не выше лимита VA.",
+          "fail_text": "Чистые активы выше лимита VA (по вашим ответам).",
           "field": "net_worth_cents", "op": "lte", "ref": "net_worth_limit_cents"
         },
         {
@@ -84,6 +88,7 @@
         }
       ],
       "result_description": "Если условия выполняются, родитель, возможно, может претендовать на пенсию VA с надбавкой Aid & Attendance. Решение принимает VA после рассмотрения заявления.",
+      "unlikely_description": "Скорее всего, пенсия VA с надбавкой Aid & Attendance не подойдёт: не выполнены условия, указанные ниже. Если ответы неточны, сверьтесь с va.gov.",
       "documents": [
         "DD214 или другой документ об увольнении с военной службы",
         "VA Form 21-2680 (заполняет врач)",
@@ -137,6 +142,7 @@
         }
       ],
       "result_description": "Возможно, родитель может претендовать на Medicaid для долгосрочного ухода. Решение принимает штат.",
+      "unlikely_description": "Скорее всего, Medicaid для долгосрочного ухода не подойдёт: не выполнены условия, указанные ниже. Окончательно решает штат.",
       "documents": [
         "Документ, удостоверяющий личность и гражданство/иммиграционный статус",
         "Сведения о доходах (Social Security, пенсии)",
@@ -166,33 +172,146 @@
           "id": "incapable_of_self_care",
           "on_fail": "unlikely",
           "check": "Родитель не может сам позаботиться о гигиене и питании или нуждается в постоянном присмотре.",
+          "fail_text": "Родителю не нужна помощь в уходе за собой (по вашим ответам).",
           "field": "needs_help_daily_activities", "op": "eq", "value": true
         },
         {
           "id": "lives_with_you",
           "on_fail": "unlikely",
           "check": "Родитель жил с вами больше половины года.",
+          "fail_text": "Родитель жил с вами не больше половины года (по вашим ответам).",
           "field": "lives_with_caregiver_over_half_year", "op": "eq", "value": true
         },
         {
           "id": "support_test",
           "on_fail": "unlikely",
           "check": "Вы обеспечиваете больше 50% всей поддержки родителя за год (тест поддержки, IRS Pub. 501).",
+          "fail_text": "Вы обеспечиваете не больше 50% поддержки родителя (по вашим ответам).",
           "field": "caregiver_provides_over_half_support", "op": "eq", "value": true
         },
         {
           "id": "work_related",
           "on_fail": "unlikely",
           "check": "Расходы на уход нужны, чтобы вы (и супруг при совместной декларации) могли работать или искать работу.",
+          "fail_text": "Расходы на уход не нужны для вашей работы или поиска работы (по вашим ответам).",
           "field": "caregiver_works", "op": "eq", "value": true
         }
       ],
       "always_check": ["Возможно, подходит — проверьте у налогового специалиста."],
       "result_description": "Возможно, вы можете заявить налоговый кредит на уход за родителем. Проверьте у налогового специалиста.",
+      "unlikely_description": "Скорее всего, кредит не подойдёт: не выполнены условия, указанные ниже.",
       "documents": [
         "Чеки и счета за уход с именем, адресом и TIN/SSN поставщика услуг",
         "Подтверждение расходов на содержание родителя (для теста 50% поддержки)",
         "Форма 2441 к налоговой декларации"
+      ]
+    },
+    {
+      "id": "va_caregiver_pcafc",
+      "name": "VA: программа поддержки семейных ухаживающих (PCAFC)",
+      "summary": "Программа VA для семейных ухаживающих за ветераном с рейтингом нарушения здоровья 70% и выше, которому нужен постоянный личный уход. Для основного ухаживающего предусмотрено ежемесячное содержание (stipend).",
+      "state": null,
+      "source_url": "https://www.va.gov/family-and-caregiver-benefits/health-and-disability/comprehensive-assistance-for-family-caregivers/",
+      "amounts_source_urls": [],
+      "last_verified": "2026-11-14",
+      "amounts_valid_until": null,
+      "amounts": {},
+      "amounts_note": "Размер содержания зависит от уровня помощи и региона, уточните на va.gov.",
+      "input_fields": ["is_veteran", "va_service_rating_70_plus", "needs_help_daily_activities"],
+      "conditions": [
+        {
+          "id": "veteran",
+          "on_fail": "unlikely",
+          "check": "Родитель — ветеран, уволенный с военной службы (или с датой увольнения по медицинским причинам).",
+          "fail_text": "Родитель не является ветераном (по вашим ответам).",
+          "field": "is_veteran", "op": "eq", "value": true
+        },
+        {
+          "id": "rating_70",
+          "on_fail": "unlikely",
+          "check": "Рейтинг нарушения здоровья VA (отдельный или суммарный) — 70% или выше.",
+          "fail_text": "Рейтинг нарушения здоровья VA ниже 70% (по вашим ответам).",
+          "field": "va_service_rating_70_plus", "op": "eq", "value": true
+        },
+        {
+          "id": "needs_care",
+          "on_fail": "unlikely",
+          "check": "Ветерану нужен личный уход.",
+          "fail_text": "Ветерану не нужен личный уход (по вашим ответам).",
+          "field": "needs_help_daily_activities", "op": "eq", "value": true
+        },
+        {
+          "id": "six_months",
+          "on_fail": "check",
+          "check": "Ветерану нужно не меньше 6 месяцев непрерывного личного ухода.",
+          "manual": true
+        },
+        {
+          "id": "va_healthcare",
+          "on_fail": "check",
+          "check": "Ветеран записан в систему здравоохранения VA (VA health care).",
+          "manual": true
+        },
+        {
+          "id": "caregiver",
+          "on_fail": "check",
+          "check": "Ухаживающему не меньше 18 лет, и он родственник ветерана (супруг, сын, дочь, родитель, член семьи) или живёт с ветераном постоянно либо готов жить.",
+          "manual": true
+        }
+      ],
+      "result_description": "Возможно, семья может претендовать на программу поддержки ухаживающих VA. Решение принимает VA.",
+      "unlikely_description": "Скорее всего, программа поддержки ухаживающих VA не подойдёт: не выполнены условия, указанные ниже.",
+      "documents": [
+        "Заявление VA Form 10-10CG (заполняют ветеран и ухаживающий вместе)",
+        "Документы о военной службе ветерана",
+        "Медицинские документы о потребности в уходе"
+      ]
+    },
+    {
+      "id": "medicare_savings_extra_help",
+      "name": "Medicare Savings Programs и Extra Help: помощь с оплатой Medicare и лекарств",
+      "summary": "Medicare Savings Programs (QMB, SLMB, QI, QDWI) помогают оплачивать взносы и расходы Medicare. Extra Help помогает оплачивать лекарства по Medicare Part D. Для обеих программ доход и активы должны быть ниже лимитов.",
+      "state": null,
+      "source_url": "https://www.medicare.gov/basics/costs/help/medicare-savings-programs",
+      "amounts_source_urls": [],
+      "last_verified": "2026-11-14",
+      "amounts_valid_until": null,
+      "amounts": {
+        "income_limit_cents": null,
+        "asset_limit_cents": null
+      },
+      "amounts_note": "Лимиты устанавливаются федерально или штатом, уточните на medicare.gov.",
+      "input_fields": ["has_medicare", "annual_income_cents", "net_worth_cents"],
+      "conditions": [
+        {
+          "id": "medicare",
+          "on_fail": "unlikely",
+          "check": "У родителя есть Medicare (для SLMB и QI нужны и Part A, и Part B).",
+          "fail_text": "У родителя нет Medicare (по вашим ответам).",
+          "field": "has_medicare", "op": "eq", "value": true
+        },
+        {
+          "id": "income",
+          "on_fail": "check",
+          "check": "Доход ниже лимита Medicare Savings Programs или Extra Help. Некоторые штаты не учитывают часть дохода, поэтому подать заявление стоит и при доходе чуть выше лимита.",
+          "field": "annual_income_cents", "op": "lte", "ref": "income_limit_cents"
+        },
+        {
+          "id": "assets",
+          "on_fail": "check",
+          "check": "Активы ниже лимита программы.",
+          "field": "net_worth_cents", "op": "lte", "ref": "asset_limit_cents"
+        }
+      ],
+      "always_check": [
+        "Medicare Savings Programs оформляются через штат. Extra Help назначается автоматически при полном Medicaid, помощи штата с оплатой Part B или выплатах SSI; иначе — заявление в Social Security. Подробнее: https://www.medicare.gov/basics/costs/help/drug-costs"
+      ],
+      "result_description": "Возможно, родитель может получить помощь с оплатой Medicare или лекарств. Решение принимает программа.",
+      "unlikely_description": "Скорее всего, эти программы не подойдут: они предназначены для людей с Medicare.",
+      "documents": [
+        "Документ о доходах",
+        "Выписка о накоплениях",
+        "Medicare card"
       ]
     }
   ]
